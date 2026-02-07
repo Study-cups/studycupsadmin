@@ -13,6 +13,8 @@ import { collegeApi, courseApi, examApi, blogApi, enquiryApi, eventApi } from '.
 import { collegeColumns, courseColumns, examColumns, blogColumns, enquiryColumns, eventColumns, collegeFormFields, courseFormFields, examFormFields, blogFormFields, enquiryFormFields, eventFormFields } from './constants';
 import type { Page } from './types';
 import ExamEditPage from "./components/ExamEditPage";
+import AddBlog from "./components/AddBlog";
+
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard'); 
@@ -92,7 +94,13 @@ const App: React.FC = () => {
   );
 
     case 'blogs':
-      return <DataManagement title="Blogs" api={blogApi} columns={blogColumns} formFields={blogFormFields} />;
+      return <DataManagement title="Blogs" api={blogApi} 
+      columns={blogColumns} 
+      formFields={blogFormFields}
+       onAddBlog={() => setCurrentPage("addBlog")}
+      />;
+    case "addBlog":
+      return <AddBlog />;
 
     case 'enquiries':
       return <DataManagement title="Enquiries" api={enquiryApi} columns={enquiryColumns} formFields={enquiryFormFields} />;
@@ -120,6 +128,7 @@ const App: React.FC = () => {
     settings: 'Settings', 
     editCollege: 'College Scraper Dashboard',
     editExam: 'Edit Exam',
+    addBlog: 'Add New Blog',
   }
 
   return (

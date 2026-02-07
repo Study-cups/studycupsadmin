@@ -12,11 +12,12 @@ interface DataManagementProps<T extends DataItem> {
   columns: Column<T>[];
   formFields: FormField[];
   onEditCollege?: (id: number) => void;
-  onEditExam?: (id: number) => void;   // ✅ ADD THIS
+  onEditExam?: (id: number) => void; 
+    onAddBlog?: () => void;  // ✅ ADD THIS
 }
 
 
-function DataManagementImpl<T extends DataItem>({ title, api, columns, formFields , onEditCollege ,   onEditExam  }: DataManagementProps<T>): React.ReactElement {
+function DataManagementImpl<T extends DataItem>({ title, api, columns, formFields , onEditCollege ,   onEditExam  , onAddBlog }: DataManagementProps<T>): React.ReactElement {
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -283,6 +284,16 @@ const toggleResolved = (item: any) => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+       {title === "Blogs" && onAddBlog && (
+  <button
+    onClick={onAddBlog}
+    className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg"
+  >
+    <Plus size={18} className="mr-2" />
+    Add Blog
+  </button>
+)}
+
             {title === 'Enquiries' && (
                 <button onClick={handleExport} className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                     <Download size={18} className="mr-2" /> Export CSV

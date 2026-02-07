@@ -7,7 +7,11 @@ import {
 } from "lucide-react";
 
 /* ================== SOCKET & CONSTANTS ================== */
-const socket = io("https://studycupsbackend-wb8p.onrender.com/api", { transports: ["websocket"] });
+const socket = io(
+  "http://localhost:5000",
+  { transports: ["websocket"] }
+);
+
 const EXCLUDED_KEYS = ["_id", "id", "createdAt", "updatedAt", "tempId"];
 
 /* ================== INTERFACES ================== */
@@ -20,6 +24,7 @@ interface CourseItemProps {
 
 const CourseDetailRow: React.FC<{ label: string; value: any }> = ({ label, value }) => {
   if (!value || (Array.isArray(value) && value.length === 0)) return null;
+ 
   
   return (
     <div className="border-b border-gray-100 py-3 last:border-0">
@@ -228,35 +233,101 @@ const CollegeScraperDashboard: React.FC<{ onBack?: () => void }> = ({ onBack }) 
   const [loading, setLoading] = useState(false);
   const [scrapedData, setScrapedData] = useState<any | null>(null);
   const [tempId, setTempId] = useState<string | null>(null);
+ 
 
-  const startProcess = async () => {
-    if (!url.trim()) return alert("Enter valid URL");
-    setLoading(true);
-    try {
-      const res = await fetch("https://studycupsbackend-wb8p.onrender.com/api/scrape/start", {
+  const pollResult = async (id: string) => {
+  const res = await fetch(`/api/scrape/result/${id}`);
+  const json = await res.json();
+
+  if (json.status === "completed") {
+    setScrapedData(json.data);
+    setLoading(false);
+    return;
+  }
+
+  if (json.status === "error") {
+    alert(json.data.error);
+    setLoading(false);
+    return;
+  }
+
+  setTimeout(() => pollResult(id), 3000);
+};
+
+
+const startProcess = async () => {
+  if (!url.trim()) {
+    alert("Enter valid URL");
+    return;
+  }
+
+  setLoading(true);
+  setScrapedData(null);
+  setTempId(null);
+
+  try {
+    const res = await fetch(
+      "http://localhost:5000/api/scrape/start",
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
-      });
-      const data = await res.json();
-      setTempId(data.tempId);
-      const dbRes = await fetch(`https://studycupsbackend-wb8p.onrender.com/api/scrape/result/${data.tempId}`);
-      const dbData = await dbRes.json();
-      setScrapedData(dbData.data);
-    } catch (err) { alert("Scraping failed!"); } finally { setLoading(false); }
-  };
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success || !data.tempId) {
+      alert(data?.error || "Failed to start scraping");
+      setLoading(false);
+      return;
+    }
+
+    setTempId(data.tempId);
+
+    // ✅ POLLING START
+    pollResult(data.tempId);
+
+  } catch (err) {
+    console.error("Scrape start error:", err);
+    alert("Scraping failed");
+    setLoading(false);
+  }
+};
+
+
 
   const handleMigrate = async () => {
-    if (!window.confirm("Ready to save this college to main database?")) return;
-    try {
-      await fetch(`https://studycupsbackend-wb8p.onrender.com/api/scrape/migrate/${tempId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scrapedData)
-      });
-      alert("✅ Success! College added to Database.");
-    } catch (e) { alert("Migration failed"); }
-  };
+  if (!tempId) {
+    alert("No temp data found. Please scrape again.");
+    return;
+  }
+
+  if (!window.confirm("Ready to save this college to main database?")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `https://studycupsbackend-wb8p.onrender.com/api/scrape/migrate/${tempId}`,
+      { method: "POST" }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.error || "Migration failed");
+      return;
+    }
+
+    alert("✅ Success! College added to Database.");
+
+  } catch (e) {
+    console.error("Migration error:", e);
+    alert("Migration failed");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10">
